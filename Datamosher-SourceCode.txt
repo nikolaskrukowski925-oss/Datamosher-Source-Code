@@ -1,0 +1,61 @@
+import os
+import struct
+from pathlib import Path
+
+def infinite_mosh():
+    try:
+        file_input = input("Drag AVI here: ").strip().replace('"', '').replace("'", "")
+        if not os.path.exists(file_input):
+            print("File not found.")
+            return
+
+        with open(file_input, 'rb') as f:
+            data = bytearray(f.read())
+
+        desktop = Path.home() / "Desktop"
+        output_path = desktop / f"moshed_{os.path.basename(file_input)}"
+
+
+        target = b'00dc'
+        pos = data.find(target)
+        
+        if_frame_count = 0
+        moshed_count = 0
+        
+        while pos != -1:
+            if pos + 8 < len(data):
+
+                size = struct.unpack('<I', data[pos+4:pos+8])[0]
+                
+               
+                if size > 8000: 
+                    if_frame_count += 1
+                    
+                    if if_frame_count > 1:
+
+                        start_patch = pos + 8
+                        end_patch = start_patch + size
+                        
+                        if end_patch < len(data):
+                          
+                            data[start_patch:end_patch] = b'\x00' * size
+                            moshed_count += 1
+            
+            pos = data.find(target, pos + 4)
+
+        with open(output_path, 'wb') as f:
+            f.write(data)
+
+        print("-" * 30)
+        print(f"I-frames found: {if_frame_count}")
+        print(f"I-frames overwritten: {moshed_count}")
+        print(f"The mosh is done.")
+        print("-" * 30)
+
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    input("\nPress enter to close")
+
+if __name__ == "__main__":
+    infinite_mosh()
